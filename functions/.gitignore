@@ -1,0 +1,4 @@
+*.local
+venv/*
+__pycache__/*
+engine/__pycache__/*

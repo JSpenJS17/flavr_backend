@@ -1,0 +1,57 @@
+i  emulators: Starting emulators: functions, firestore, extensions
+⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, database, hosting, pubsub, storage, dataconnect
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  functions: Watching "/home/pierce/Desktop/School/582/firebase_funcs/functions" for Cloud Functions...
+ * Serving Flask app 'serving'
+ * Debug mode: off
+
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:8081
+Press CTRL+C to quit
+
+127.0.0.1 - - [13/Apr/2025 21:17:35] "GET /__/functions.yaml HTTP/1.1" 200 -
+
+127.0.0.1 - - [13/Apr/2025 21:17:35] "GET /__/quitquitquit HTTP/1.1" 200 -
+
+Terminated
+
+✔  functions: Loaded functions definitions from source: cre.
+✔  functions[us-central1-cre]: http function initialized (http://127.0.0.1:5001/test-35b4b/us-central1/cre).
+
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────┬────────────────┬──────────────────────────────────┐
+│ Emulator   │ Host:Port      │ View in Emulator UI              │
+├────────────┼────────────────┼──────────────────────────────────┤
+│ Functions  │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions  │
+├────────────┼────────────────┼──────────────────────────────────┤
+│ Firestore  │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore  │
+├────────────┼────────────────┼──────────────────────────────────┤
+│ Extensions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/extensions │
+└────────────┴────────────────┴──────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+┌─────────────────────────┬───────────────┬─────────────────────┐
+│ Extension Instance Name │ Extension Ref │ View in Emulator UI │
+└─────────────────────────┴───────────────┴─────────────────────┘
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+ * Serving Flask app 'serving'
+ * Debug mode: off
+
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:8081
+
+Press CTRL+C to quit
+
+127.0.0.1 - - [13/Apr/2025 21:17:37] "GET /__/functions.yaml HTTP/1.1" 200 -
+
+127.0.0.1 - - [13/Apr/2025 21:17:37] "GET /__/quitquitquit HTTP/1.1" 200 -
+
+Terminated
+
+✔  functions: Loaded functions definitions from source: cre.
