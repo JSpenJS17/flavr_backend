@@ -1,39 +1,35 @@
 from engine import cbe, ube, utv
-import argparse
 import pandas as pd
+import json
 
 # The Cloud Functions for Firebase SDK to create Cloud Functions and set up triggers.
 from firebase_functions import firestore_fn, https_fn
 
 # The Firebase Admin SDK to access Cloud Firestore.
 from firebase_admin import initialize_app, firestore
-import google.cloud.firestore
 
 app = initialize_app()
 
-def history_from_csv(file_path):
-    """Load the swipe history from a CSV file."""
-    history = pd.read_csv(file_path)
-    history = history.sort_values(by='timestamp', ascending=False)
-    return history.to_dict(orient='records')
+# Firestore client
+db = firestore.client()
 
-def UM_from_json(json_name, download=False):
+# def UM_from_json(json_name, download=False):
     # support "file_name" and "file_name.json"
-    if json_name[-5:] != ".json":
-        json_name += ".json"
+    # if json_name[-5:] != ".json":
+    #     json_name += ".json"
 
-    # load data, survey_responses.json could be loaded dynamically from firestore
-    with open(json_name) as f:
-        json_data = json.load(f)
+    # # load data, survey_responses.json could be loaded dynamically from firestore
+    # with open(json_name) as f:
+    #     json_data = json.load(f)
         
-    df = pd.DataFrame(json_data)
-    df.set_index('user_number', inplace=True)
+    # df = pd.DataFrame(json_data)
+    # df.set_index('user_number', inplace=True)
 
-    # do some pandas magic, convert "Looks good" to 1, "" to 0, and "Doesn't look good" to -1
-    df.replace({"Looks good": 1, "": 0, "Doesn't look good": -1}, inplace=True)
-    df.drop(columns=['timestamp'], inplace=True) # might need timestamp later
+    # # do some pandas magic, convert "Looks good" to 1, "" to 0, and "Doesn't look good" to -1
+    # df.replace({"Looks good": 1, "": 0, "Doesn't look good": -1}, inplace=True)
+    # df.drop(columns=['timestamp'], inplace=True) # might need timestamp later
 
-    return df
+    # return df
 
 def UM_from_csv(csv_name):
     # support "file_name" and "file_name.csv"
@@ -44,11 +40,16 @@ def UM_from_csv(csv_name):
     df = pd.read_csv(csv_name)
     df.set_index('user_number', inplace=True)
 
-    # do some pandas magic, convert "Looks good" to 1, "" to 0, and "Doesn't look good" to -1
-    df.replace({"Looks good": 1, "": 0, "Doesn't look good": -1}, inplace=True)
-    df.drop(columns=['timestamp'], inplace=True) # might need timestamp later
-
     return df # users_matrix -- user taste vectors stacked on each other
+
+def UTV_from_csv(csv_name):
+    # support "file_name" and "file_name.csv"
+    if csv_name[-4:] != ".csv":
+        csv_name += ".csv"
+
+    df = pd.read_csv(csv_name)
+    df.set_index('dish', inplace=True)
+    return df # user taste vector for the current user
 
 def DM_from_csv(csv_path):
     if csv_path[-4:] != ".csv":
@@ -59,21 +60,22 @@ def DM_from_csv(csv_path):
     
     return dish_matrix
 
-def cre_loc(DM, UM, history, num_recent=5):
+
+def cre_loc(DM, UM, UTV, swipes):
     """Run the combined content recommendation engine.
 
     Args:
         DM (pd.DataFrame): Dish metadata (pre-baked by DM_prebaker.py).
         UM (pd.DataFrame): User matrix (stacked user taste vectors from Firestore).
-        history (str): Path to the swipe history CSV file.
-        num_recent (int, optional): Number of recent swipes to consider for the user taste vector. Defaults to 5.
+        UTV (pd.DataFrame): User Taste Vector for the current user
+        swipes (list of tuples): Swipe history for the current user.
 
     Returns:
         pd.Series: Recommended dishes and their scores, normalized to [-1, 1].
     """
 
     # Get the user taste vector
-    UTV = utv.get_user_taste_vector(history, num_recent)
+    UTV = utv.update_UTV_swipes(UTV, swipes)
 
     # Get recommendations
     cbe_recs = cbe.cbe(DM, UTV)
@@ -88,64 +90,124 @@ def cre_loc(DM, UM, history, num_recent=5):
     # Save to output file if specified
     return combined_recs
     
+def make_utv(user_id):
+    # upload a blank UTV to users/user_id/UTV
+    UTV = UTV_from_csv("data/empty_utv.csv")
+    utv_dict = UTV.to_dict()["taste"]
+    utv_ref = db.collection("users").document(user_id).collection("UTV")
+    batch = db.batch()
+    for key, value in utv_dict.items():
+        doc_ref = utv_ref.document(key)
+        batch.set(doc_ref, {"value": value})
+    batch.commit()
+
+    return UTV
+        
+
 @https_fn.on_request()
 def cre(req: https_fn.Request) -> https_fn.Response:
     ### MAIN API FUNCTION ##
+
+    # Make sure it’s a POST request
+    if req.method != "POST":
+        return https_fn.Response("Method Not Allowed", status=405)
+
+    # Parse incoming JSON
+    try:
+        body = req.get_json(silent=True)
+        if not body:
+            return https_fn.Response("Invalid or missing JSON body", status=400)
+
+        # Extract user ID and swipes
+        user_id = body.get("user-id") # string
+        swipes = body.get("swipes")   # dict
+
+        if not user_id or not isinstance(swipes, dict):
+            return https_fn.Response("Invalid format: 'user-id' or 'swipes' missing/invalid", status=400)
+
+    except Exception as e:
+        return https_fn.Response(f"Error parsing JSON: {str(e)}", status=400)
+        
+
+    # Load the dish matrix, and user matrix
+    DM = DM_from_csv("data/dish_metadata.csv")
+    UM = UM_from_csv("data/survey_responses.csv")
     
-    # way to test 
-    # original = req.args.get("text")
-    # if original is None:
-    #     return https_fn.Response("No text parameter provided", status=400)
 
-    # assume data directories
-    data_dir = "data/"
-    dish_metadata = data_dir + "dish_metadata.csv"
-    user_matrix = data_dir + "survey_responses.csv"
-    swipe_history = data_dir + "history.csv"
+    # Download UTV for this user from Firestore
+    try:
+        # check if the UTV exists
+        utv_ref = db.collection("users").document(user_id).collection("UTV")
+        docs = utv_ref.stream()
+        existed = False
+        if not any(doc.exists for doc in docs): # not sure how slow this is
+            # UTV doesn't exist, create a new (blank) one
+            UTV = make_utv(user_id)
 
-    # Load the dish matrix, user matrix, and swipe history
-    DM = DM_from_csv(dish_metadata)
-    UM = UM_from_csv(user_matrix)
-    history = history_from_csv(swipe_history)
+        else:
+            # Load UTV from Firestore, much faster
+            utv_dict = {}
+            for doc in docs:
+                dish = doc.id
+                value = doc.to_dict().get("value")
+                utv_dict[dish] = value
 
-    # Run the collaborative recommendation engine
-    recs = cre_loc(DM, UM, history, 5)
-    
-    print("Recommendations:")
-    print(recs)
+            utv_dict = {"taste": utv_dict}
 
-    firestore_client: google.cloud.firestore.Client = firestore.client()
+            UTV = pd.DataFrame(utv_dict)
+            UTV.index.name = "dish"
+            existed = True
+        
+    except Exception as e:
+        return https_fn.Response(f"Error loading UTV from Firestore: {str(e)}", status=500)
 
-    _, doc_ref_rec = firestore_client.collection("Recs").add(recs.to_dict())
+    # Update UTV using swipe data
+    try:
+        UTV = utv.update_UTV_swipes(UTV, swipes)
+    except Exception as e:
+        return https_fn.Response(f"Error updating UTV: {str(e)}", status=500)
 
-    return https_fn.Response(f"Recs with ID {doc_ref_rec.id} added.")
+
+    # Save updated UTV back to Firestore
+    try:
+        # utv_ref = db.collection("users").document(user_id).collection("UTV")
+        utv_dict = UTV.to_dict()["taste"]
+        batch = db.batch()
+        for key, value in utv_dict.items():
+            doc_ref = utv_ref.document(key)
+            batch.set(doc_ref, {"value": value})
+        batch.commit()
+
+    except Exception as e:
+        return https_fn.Response(f"Error writing UTV to Firestore: {str(e)}", status=500)
+
+
+    # Run the recommendation engine
+    try:
+        recs = cre_loc(DM, UM, UTV, swipes).head(10)
+        return https_fn.Response(json.dumps(recs.to_dict()), content_type="application/json")
+    except Exception as e:
+        return https_fn.Response(f"Error generating recommendations: {str(e)}", status=500)
+
+
 
 if __name__ == "__main__":
-    cre(None)
+    # Load the dish matrix, user matrix, and swipe history
+    DM = DM_from_csv("data/dish_metadata.csv")
+    UM = UM_from_csv("data/survey_responses.csv")
 
-# if __name__ == "__main__":
-#     # parse args if run from cmdline
-#     parser = argparse.ArgumentParser(description="Run the collaborative recommendation engine.")
-#     parser.add_argument("dish_metadata", help="Path to dish metadata CSV file")
-#     parser.add_argument("user_matrix", help="Path to user matrix CSV file")
-#     parser.add_argument("swipe_history", help="Path to swipe history CSV file")
-#     parser.add_argument("-o", "--output", help="Output CSV file")
-#     parser.add_argument("-n", "--num_recent", type=int, default=5, help="Number of recent swipes to consider")
+    UTV = UTV_from_csv("data/empty_utv.csv")
 
-#     args = parser.parse_args()
+    # Example swipe history
+    swipes = {
+        "pizza": 1,
+        "huli huli": -1,
+        "steak": 1,
+    }
 
-#     # Load the dish matrix, user matrix, and swipe history
-#     DM = DM_from_csv(args.dish_metadata)
-#     UM = UM_from_csv(args.user_matrix)
-#     history = history_from_csv(args.swipe_history)
+    # Update UTV using swipe data
+    UTV = utv.update_UTV_swipes(UTV, swipes)
 
-#     # Run the collaborative recommendation engine
-#     recs = cre(DM, UM, history, args.num_recent)
-
-#     if args.output:
-#         recs.to_csv(args.output, index=True)
-#         print(f"Recommendations saved to {args.output}")
-#     else:
-#         print("Recommendations:")
-#         print(recs)
-
+    # Run the recommendation engine
+    recs = cre_loc(DM, UM, UTV, swipes)
+    print(recs.head(10))

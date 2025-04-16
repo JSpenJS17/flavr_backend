@@ -1,5 +1,4 @@
 import pandas as pd
-import json
 
 # This function needs to be fast
 def ube(users_matrix, user_taste_vector, user_id = 0):
@@ -34,6 +33,7 @@ def ube(users_matrix, user_taste_vector, user_id = 0):
     for user in similar_users:
         user_ratings = users_matrix.loc[user].dropna()
         recommendations_df = recommendations_df._append(user_ratings)
+
 
     # average similar user's tastes to get our guy's recommendations
     recommended_dishes = recommendations_df.mean(axis=0)
