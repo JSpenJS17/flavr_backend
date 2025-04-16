@@ -132,14 +132,13 @@ def cre(req: https_fn.Request) -> https_fn.Response:
     # Load the dish matrix, and user matrix
     DM = DM_from_csv("data/dish_metadata.csv")
     UM = UM_from_csv("data/survey_responses.csv")
-    
+
 
     # Download UTV for this user from Firestore
     try:
         # check if the UTV exists
         utv_ref = db.collection("users").document(user_id).collection("UTV")
         docs = utv_ref.stream()
-        existed = False
         if not any(doc.exists for doc in docs): # not sure how slow this is
             # UTV doesn't exist, create a new (blank) one
             UTV = make_utv(user_id)
@@ -156,7 +155,6 @@ def cre(req: https_fn.Request) -> https_fn.Response:
 
             UTV = pd.DataFrame(utv_dict)
             UTV.index.name = "dish"
-            existed = True
         
     except Exception as e:
         return https_fn.Response(f"Error loading UTV from Firestore: {str(e)}", status=500)
