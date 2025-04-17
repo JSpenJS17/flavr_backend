@@ -8,17 +8,23 @@ Then to run the Firebase Functions, run these (you might have to install some ot
 cd functions
 firebase login
 python3.11 -m pip install pandas
-python3.11 -m venv venv
 firebase emulators:start
 ```
 
-You'll get a bunch of error messages telling you to run some commands and you might have to specifically install Python 3.11 (on my machine, `sudo apt install python3.11`)
+This will set up an EMULATOR for testing. It's all local -- no damage to our wallets.
+**To test this, it will give you a URL on startup for each Firebase Function that it fires up.**
+Use the command below with that URL and you'll get a response.
 
-I uploaded `working_correct.txt` which is what my machine outputs when it starts up. The link http://127.0.0.1:5001/test-35b4b/us-central1/cre is a part of that output and is what you'll need to use to test the function.
 
-This was hastily written and I don't remember all of the steps so here's the link to the guide I followed: **https://firebase.google.com/docs/functions/get-started?gen=2nd#python**
+## Important Part:
 
-**Final note**: I set up a test project for this (test-35b4b) so you might need access to it to actually run the code. If you do need access, it's worth it to set up your own test project or to just use flavr's project to set it up for production immediately.
+To test, I've been using this curl command (replace the URL with either the test one or the real one):
+**`curl -X POST <FUNCTION_URL> -H "Content-Type: application/json" -d '{"user-id": "FohydHkTpxPWf3SY70b2iyMiVT02", "swipes": {"sushi": 1, "pizza": -1, "steak": 1, "huli huli": -1}}'`**
 
-Hit my line if you have questions :)
+**https://us-central1-flavr-4e17f.cloudfunctions.net/cre <-- THIS IS THE REAL PRODUCTION URL**
 
+We need to figure out authentication, I have no clue how that will work. When authentication is bypassed, the functions work as intended.
+
+From the frontend's perspective, it should be as simple as an HTTP post request. i.e. the frontend should NOT NEED TO KNOW about firebase. It's all a magic black box in the sky.
+
+If you have questions feel free to hit my line :)
