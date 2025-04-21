@@ -5,8 +5,9 @@ import json
 # The Cloud Functions for Firebase SDK to create Cloud Functions and set up triggers.
 from firebase_functions import firestore_fn, https_fn
 
-# The Firebase Admin SDK to access Cloud Firestore.
+# The Firebase Admin SDK to access Cloud Firestore and Firebase Authentication.
 from firebase_admin import initialize_app, firestore
+from firebase_admin import auth as firebase_auth
 
 app = initialize_app()
 
@@ -106,11 +107,11 @@ def make_utv(user_id):
 
 @https_fn.on_request()
 def cre(req: https_fn.Request) -> https_fn.Response:
-    ### MAIN API FUNCTION ##
+    ### MAIN API FUNCTION ###
 
-    # Make sure it’s a POST request
+    # Make sure it's a POST request
     if req.method != "POST":
-        return https_fn.Response("Method Not Allowed", status=405)
+        return https_fn.Response("Method Not Allowed", status=405)x
 
     # Parse incoming JSON
     try:
