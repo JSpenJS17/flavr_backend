@@ -111,7 +111,7 @@ def cre(req: https_fn.Request) -> https_fn.Response:
 
     # Make sure it's a POST request
     if req.method != "POST":
-        return https_fn.Response("Method Not Allowed", status=405)x
+        return https_fn.Response("Method Not Allowed", status=405)
 
     # Parse incoming JSON
     try:
