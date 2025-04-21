@@ -28,3 +28,15 @@ We need to figure out authentication, I have no clue how that will work. When au
 From the frontend's perspective, it should be as simple as an HTTP post request. i.e. the frontend should NOT NEED TO KNOW about firebase. It's all a magic black box in the sky.
 
 If you have questions feel free to hit my line :)
+
+
+Input JSON format:
+{
+  "user-id": "FohydHkTpxPWf3SY70b2iyMiVT02", 
+  "swipes": {
+    "sushi": 1, 
+    "pizza": -1, 
+    "steak": 1, 
+    "huli huli": -1
+  }
+}
