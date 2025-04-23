@@ -82,8 +82,6 @@ def cre_loc(DM, UM, UTV):
     cbe_recs = cbe.cbe(DM, UTV)
     ube_recs = ube.ube(UM, UTV)
 
-    print(ube_recs)
-
     # Combine recommendations from CBE and UBE
     combined_recs = pd.concat([cbe_recs, ube_recs], axis=1)
     combined_recs.columns = ['CBE', 'UBE']
@@ -100,8 +98,9 @@ def make_utv(user_id):
     utv_ref = db.collection("users").document(user_id).collection("UTV")
     batch = db.batch()
     for key, value in utv_dict.items():
+        print("Uploading empty dish:", key)
         doc_ref = utv_ref.document(key)
-        batch.set(doc_ref, {"value": value})
+        batch.set(doc_ref, {"value": 0.0})
     batch.commit()
 
     return UTV
@@ -139,21 +138,33 @@ def cre(req: https_fn.Request) -> https_fn.Response:
 
     # Download UTV for this user from Firestore
     try:
-        # check if the UTV exists
+        # Grab their UTV
         utv_ref = db.collection("users").document(user_id).collection("UTV")
         docs = utv_ref.stream()
-        if not any(doc.exists for doc in docs): # not sure how slow this is
-            # UTV doesn't exist, create a new (blank) one
+        make_new = True
+        first_dish = None
+
+        # Check if we need to give them a new UTV
+        for doc in docs:
+            if doc.exists:
+                first_dish = doc
+                make_new = False
+                break
+
+        # If we do, make it
+        if make_new:
             UTV = make_utv(user_id)
 
+        # If we don't, load it
         else:
-            # Load UTV from Firestore, much faster
             utv_dict = {}
+            value = first_dish.to_dict().get("value")
+            utv_dict[first_dish.id] = value
             for doc in docs:
                 dish = doc.id
                 value = doc.to_dict().get("value")
                 utv_dict[dish] = value
-
+            
             utv_dict = {"taste": utv_dict}
 
             UTV = pd.DataFrame(utv_dict)
@@ -200,12 +211,50 @@ if __name__ == "__main__":
         "pizza": 1,
         "huli huli": -1,
         "steak": 1,
-        "larb": -1
+        "larb": -1,
+        "sushi": 1,
+        "taco salad": 1,
+        "pasta carbonara": 1,
     }
 
 
     user_id = "pkx490JsNdZc5KhbWp6n7LKEkFg1" 
     
+    # Do UTV from csv for this one
     UTV = UTV_from_csv("data/utv.csv")
+
+    # Download UTV for this user from Firestore
+    # utv_ref = db.collection("users").document(user_id).collection("UTV")
+    # docs = utv_ref.stream()
+    # make_new = True
+    # first_dish = None
+    # for doc in docs:
+    #     print(f"Doc ID: {doc.id}, Doc.exists: {doc.exists}")
+    #     if doc.exists:
+    #         first_dish = doc
+    #         make_new = False
+    #         break
+        
+    # if make_new:
+    #     UTV = make_utv(user_id)
+
+    # else:
+    #     utv_dict = {}
+    #     value = first_dish.to_dict().get("value")
+    #     utv_dict[first_dish.id] = value
+    #     for doc in docs:
+    #         dish = doc.id
+    #         value = doc.to_dict().get("value")
+    #         utv_dict[dish] = value
+        
+    #     utv_dict = {"taste": utv_dict}
+
+    #     UTV = pd.DataFrame(utv_dict)
+    #     UTV.index.name = "dish"
+
+    UTV = utv.update_UTV_swipes(UTV, swipes)
+
+    UTV.to_csv("data/utv.csv")
+
     response = cre_loc(DM, UM, UTV)
     print(response) # should be a json string of the top 10 recommendations

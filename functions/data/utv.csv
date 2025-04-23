@@ -5,14 +5,14 @@ beef and broccoli,0.0
 bibimbap,0.0
 birria,0.0
 biryani,0.0
-blt,-0.0625
-bouillabaisse,-0.25
-broccoli and cheddar soup,-0.25
+blt,0.0
+bouillabaisse,0.0
+broccoli and cheddar soup,0.0
 buffalo wings,0.0
 bulgogi,0.0
 burrito,0.0
-butter chicken,0.0625
-caesar salad,0.0625
+butter chicken,0.0
+caesar salad,0.0
 calzone,0.0
 carne asada,0.0
 cassoulet,0.0
@@ -29,7 +29,7 @@ clam chowder soup,0.0
 club sandwich,0.0
 cobb salad,0.0
 cochinillo,0.0
-cochinita pibil,-0.25
+cochinita pibil,0.0
 coq au vin,0.0
 cream of mushroom soup,0.0
 dakgalbi,0.0
@@ -49,14 +49,14 @@ french dip,0.0
 french onion soup,0.0
 fried chicken,0.0
 fried chicken sandwich,0.0
-galbi,-0.25
+galbi,0.0
 general tso's chicken,0.0
 gnocchi,0.0
 greek salad,0.0
 green curry,0.0
 gyros,0.0
 hot pot,0.0
-huli huli,-1.0
+huli huli,-1.5
 italian salad,0.0
 italian sandwich,0.0
 jambalaya,0.0
@@ -66,28 +66,28 @@ kimchi jjigae,0.0
 kleftiko,0.0
 kofta,0.0
 kung pao chicken,0.0
-larb,-1.0
+larb,-1.5
 lasagna,0.0
 lentil soup,0.0
 mac and cheese,0.0
 mansaf,0.0
-mapo tofu,-0.25
+mapo tofu,0.0
 massaman curry,0.0
 meatball sub,0.0
 minestrone soup,0.0
 mole poblano,0.0
-moussaka,0.0625
+moussaka,0.0
 naengmyeon,0.0
 okonomiyaki,0.0
 pad thai,0.0
-paella,-0.0625
-paneer tikka,0.0625
-pasta carbonara,0.0
+paella,0.0
+paneer tikka,0.0
+pasta carbonara,1.5
 pasta salad,0.0
 peking duck,0.0
 philly cheesesteak,0.0
 pho,0.0
-pizza,1.0
+pizza,1.5
 po boy,0.0
 poke,0.0
 pot roast,0.0
@@ -104,20 +104,20 @@ samgyeopsal,0.0
 shabu-shabu,0.0
 shakshuka,0.0
 shawarma,0.0
-shepard's pie,0.25
+shepard's pie,0.0
 shrimp tempura,0.0
 sloppy joe,0.0
 sole meuniere,0.0
 souvlaki,0.0
 spanakopita,0.0
-steak,1.0625
+steak,1.5
 stifado,0.0
 street tacos,0.0
 sundubu jjigae,0.0
-sushi,0.0
+sushi,1.5
 sweet and sour pork,0.0
 tabbouleh,0.0
-taco salad,0.0
+taco salad,0.5
 tamales,0.0
 tandoori chicken,0.0
 tartiflette,0.0
