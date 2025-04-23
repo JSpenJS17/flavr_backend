@@ -62,7 +62,7 @@ def DM_from_csv(csv_path):
     return dish_matrix
 
 
-def cre_loc(DM, UM, UTV, swipes):
+def cre_loc(DM, UM, UTV):
     """Run the combined content recommendation engine.
 
     Args:
@@ -76,11 +76,13 @@ def cre_loc(DM, UM, UTV, swipes):
     """
 
     # Get the user taste vector
-    UTV = utv.update_UTV_swipes(UTV, swipes)
+    # UTV = utv.update_UTV_swipes(UTV, swipes)
 
     # Get recommendations
     cbe_recs = cbe.cbe(DM, UTV)
     ube_recs = ube.ube(UM, UTV)
+
+    print(ube_recs)
 
     # Combine recommendations from CBE and UBE
     combined_recs = pd.concat([cbe_recs, ube_recs], axis=1)
@@ -183,67 +185,7 @@ def cre(req: https_fn.Request) -> https_fn.Response:
 
     # Run the recommendation engine
     try:
-        recs = cre_loc(DM, UM, UTV, swipes).head(10)
-        return https_fn.Response(json.dumps(recs.to_dict()), content_type="application/json")
-    except Exception as e:
-        return https_fn.Response(f"Error generating recommendations: {str(e)}", status=500)
-
-def cre_test(swipes, user_id):
-    # Load the dish matrix, and user matrix
-    DM = DM_from_csv("data/dish_metadata.csv")
-    UM = UM_from_csv("data/survey_responses.csv")
-
-
-    # Download UTV for this user from Firestore
-    try:
-        # check if the UTV exists
-        utv_ref = db.collection("users").document(user_id).collection("UTV")
-        docs = utv_ref.stream()
-        if not any(doc.exists for doc in docs): # not sure how slow this is
-            # UTV doesn't exist, create a new (blank) one
-            UTV = make_utv(user_id)
-
-        else:
-            # Load UTV from Firestore, much faster
-            utv_dict = {}
-            for doc in docs:
-                dish = doc.id
-                value = doc.to_dict().get("value")
-                utv_dict[dish] = value
-
-            utv_dict = {"taste": utv_dict}
-
-            UTV = pd.DataFrame(utv_dict)
-            UTV.index.name = "dish"
-        
-    except Exception as e:
-        return https_fn.Response(f"Error loading UTV from Firestore: {str(e)}", status=500)
-
-    # Update UTV using swipe data
-    try:
-        UTV = utv.update_UTV_swipes(UTV, swipes)
-    except Exception as e:
-        return https_fn.Response(f"Error updating UTV: {str(e)}", status=500)
-
-
-    # Save updated UTV back to Firestore
-    try:
-        # utv_ref = db.collection("users").document(user_id).collection("UTV")
-        utv_dict = UTV.to_dict()["taste"]
-        batch = db.batch()
-        for key, value in utv_dict.items():
-            doc_ref = utv_ref.document(key)
-            batch.set(doc_ref, {"value": value})
-        batch.commit()
-
-    except Exception as e:
-        return https_fn.Response(f"Error writing UTV to Firestore: {str(e)}", status=500)
-
-    UTV.to_csv("data/utv.csv") # for testing
-
-    # Run the recommendation engine
-    try:
-        recs = cre_loc(DM, UM, UTV, swipes).head(10)
+        recs = cre_loc(DM, UM, UTV).head(10)
         return https_fn.Response(json.dumps(recs.to_dict()), content_type="application/json")
     except Exception as e:
         return https_fn.Response(f"Error generating recommendations: {str(e)}", status=500)
@@ -261,6 +203,9 @@ if __name__ == "__main__":
         "larb": -1
     }
 
-    user_id = "FohydHkTpxPWf3SY70b2iyMiVT02" 
-    response = cre_test(swipes, user_id)
-    print(response.get_data(as_text=True)) # should be a json string of the top 10 recommendations
+
+    user_id = "pkx490JsNdZc5KhbWp6n7LKEkFg1" 
+    
+    UTV = UTV_from_csv("data/utv.csv")
+    response = cre_loc(DM, UM, UTV)
+    print(response) # should be a json string of the top 10 recommendations

@@ -15,6 +15,11 @@ def ube(users_matrix, user_taste_vector, user_id = 0):
     # Align the user_taste_vector with the columns of similar_users_matrix
     users_matrix.loc[user_id] = user_taste_vector.squeeze()
 
+    # print nans in users_matrix
+    for col in users_matrix.columns:
+        if users_matrix[col].isna().sum() > 0:
+            print(f"Column {col} has {users_matrix[col].isna().sum()} NaN values")
+
     # Calculate User Similarity using cosine similarity
     user_similarity = users_matrix @ users_matrix.T
     user_similarity_df = pd.DataFrame(user_similarity, 
@@ -31,7 +36,7 @@ def ube(users_matrix, user_taste_vector, user_id = 0):
 
     # put those in a df
     for user in similar_users:
-        user_ratings = users_matrix.loc[user].dropna()
+        # user_ratings = users_matrix.loc[user].dropna()
         recommendations_df = recommendations_df._append(user_ratings)
 
 
