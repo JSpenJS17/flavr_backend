@@ -31,6 +31,7 @@ If you have questions feel free to hit my line :)
 
 
 Input JSON format:
+```
 {
   "user-id": "FohydHkTpxPWf3SY70b2iyMiVT02", 
   "swipes": {
@@ -40,3 +41,4 @@ Input JSON format:
     "huli huli": -1
   }
 }
+```
