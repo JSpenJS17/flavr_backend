@@ -42,3 +42,8 @@ Input JSON format:
   }
 }
 ```
+
+## TODO:
+Absolutely must make this backend more efficient to run.
+  - Less firestore calls
+  - Less CPU time
