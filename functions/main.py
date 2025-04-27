@@ -3,34 +3,15 @@ import pandas as pd
 import json
 
 # The Cloud Functions for Firebase SDK to create Cloud Functions and set up triggers.
-from firebase_functions import firestore_fn, https_fn
+from firebase_functions import https_fn
 
 # The Firebase Admin SDK to access Cloud Firestore and Firebase Authentication.
 from firebase_admin import initialize_app, firestore
-from firebase_admin import auth as firebase_auth
 
 app = initialize_app()
 
 # Firestore client
 db = firestore.client()
-
-# def UM_from_json(json_name, download=False):
-    # support "file_name" and "file_name.json"
-    # if json_name[-5:] != ".json":
-    #     json_name += ".json"
-
-    # # load data, survey_responses.json could be loaded dynamically from firestore
-    # with open(json_name) as f:
-    #     json_data = json.load(f)
-        
-    # df = pd.DataFrame(json_data)
-    # df.set_index('user_number', inplace=True)
-
-    # # do some pandas magic, convert "Looks good" to 1, "" to 0, and "Doesn't look good" to -1
-    # df.replace({"Looks good": 1, "": 0, "Doesn't look good": -1}, inplace=True)
-    # df.drop(columns=['timestamp'], inplace=True) # might need timestamp later
-
-    # return df
 
 def UM_from_csv(csv_name):
     # support "file_name" and "file_name.csv"
@@ -200,6 +181,29 @@ def cre(req: https_fn.Request) -> https_fn.Response:
         return https_fn.Response(json.dumps(recs.to_dict()), content_type="application/json")
     except Exception as e:
         return https_fn.Response(f"Error generating recommendations: {str(e)}", status=500)
+
+def cre_multi_user(DM, UM, user_dict, scale = .8):
+    """Run the combined content recommendation engine for multiple users.
+    Args:
+        DM (pd.DataFrame): Dish metadata (pre-baked by DM_prebaker.py).
+        UM (pd.DataFrame): User matrix (stacked user taste vectors from Firestore).
+        user_dict (dict): Dictionary of (UTV, swipes) tuples for each user."""
+    
+    
+    combined_UTV = utv.update_UTV_multi_user(combined_UTV, swipes, scale)
+
+    # Get recommendations
+    cbe_recs = cbe.cbe_multi_user(DM, combined_UTV)
+    ube_recs = ube.ube_multi_user(UM, combined_UTV)
+
+    # Combine recommendations from CBE and UBE
+    combined_recs = pd.concat([cbe_recs, ube_recs], axis=1)
+    combined_recs.columns = ['CBE', 'UBE']
+    combined_recs = combined_recs.mean(axis=1)
+    combined_recs = combined_recs.sort_values(ascending=False)
+
+    # Save to output file if specified
+    return combined_recs
 
 if __name__ == "__main__":
     # Load the dish matrix, user matrix, and swipe history
